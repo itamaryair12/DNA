@@ -1,5 +1,5 @@
 #imprts
-
+import json
 def extract_DNA_sequences(textFile):
     """
     Extract DNA sequences from a text file.
@@ -64,7 +64,7 @@ def find_DNA_motifs(sequence, motif):
 
 def compute_codon_frequency(sequence):
     """
-    Find all occurrences of a given motif in a DNA sequence.
+    Calculate the frequency of each codon.
 
     Input:
     - sequence: DNA sequence.
@@ -112,3 +112,58 @@ def longest_common_subsequence(seq1, seq2):
     # Extract the longest common substring
     longest_common_substring = seq1[longest_end_pos - longest_length:longest_end_pos]
     return longest_common_substring
+
+
+def main(textfile, motif):
+    sequences = extract_DNA_sequences(textfile)
+
+    results = {
+        "motif": motif,
+        "Sequences": [],
+        "most_common_codon": None,
+        "longest_common_substring": {
+            "value": "",
+            "sequences": [],
+            "length": 0
+        }
+    }
+
+
+    #initialize parameters
+    all_codons = {}
+    longest_common_val = ""
+    longest_common_length = 0
+
+    for i, sequence in enumerate(sequences):
+        gc_content = compute_GC_content(sequence)
+        motif_positions = find_DNA_motifs(sequence, motif)
+        codon_freq = compute_codon_frequency(sequence)
+
+        for codon, freq in codon_freq.items():
+            if codon in all_codons:
+                all_codons[codon] += freq
+            else:
+                all_codons[codon] = freq
+
+        results["Sequences"].append({
+            "gc_content": round(gc_content, 2),
+            "motif_positions": motif_positions if motif_positions else None,
+            "codons": codon_freq
+        })
+
+
+        for j in range(i+1, len(sequence)):
+            lcs_value = longest_common_subsequence(sequence, sequences[j])
+            if len(lcs_value) > longest_common_length:
+                longest_common_val = lcs_value
+                longest_common_length = len(lcs_value)
+                results["longest_common_substring"] = {
+                    "value": lcs_value,
+                    "sequences": [i + 1, j + 1],
+                    "length": len(lcs_value)
+                }
+
+    results["most_common_codon"] = max(all_codons, key=all_codons.get)
+
+    print(json.dumps(results, indent=4))
+    
