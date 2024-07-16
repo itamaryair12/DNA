@@ -1,6 +1,6 @@
 #imprts
 import json
-def extract_DNA_sequences(textFile):
+def extract_dna_sequences(textFile):
     """
     Extract DNA sequences from a text file.
 
@@ -11,12 +11,16 @@ def extract_DNA_sequences(textFile):
     - DNA sequences.
     """
 
-    with open(textFile, 'r') as file:
-        sequences = [line.strip() for line in file.readlines()]
-    return sequences
+    try:
+        with open(textFile, 'r') as file:
+            sequences = [line.strip() for line in file.readlines()]
+        return sequences
+    except IOError as e:
+        print(f"Error reading file {textFile}: {e}")
+        return []
 
 
-def compute_GC_content(sequence):
+def compute_gc_content(sequence):
     """
     Compute the GC content of a DNA sequence.
 
@@ -33,9 +37,10 @@ def compute_GC_content(sequence):
     return (amount_of_gc / float(len(sequence))) * 100
 
 
-def find_DNA_motifs(sequence, motif):
+def find_dna_motifs(sequence, motif):
     """
     Find all occurrences of a given motif in a DNA sequence.
+    NOTE: This function includes overlapping positions of the motif if they occur.
 
     Input:
     - sequence: DNA sequence.
@@ -45,19 +50,10 @@ def find_DNA_motifs(sequence, motif):
     - occurrences: list of occurrences of motif (location by index).
     """
     positions = []
-    pos = 0  # in case we want to accept overlap
-    while pos < len(sequence):
-        pos = sequence.find(motif, pos)
-        if pos == -1:
-            break
-        positions.append(pos)
-        pos += 1  # Move to the next character to allow overlapping matches
-
-    # in case we want to ignore overlap
-    #pos = sequence.find(motif)
-    #while pos != -1:
-    #    positions.append(pos)
-    #    pos = sequence.find(motif, pos + 1)
+    pos = sequence.find(motif)
+    while pos != -1:
+       positions.append(pos + 1)  # Convert to start from 1 instead of 0
+       pos = sequence.find(motif, pos + 1)
 
     return positions
 
@@ -115,7 +111,7 @@ def longest_common_subsequence(seq1, seq2):
 
 
 def main(textfile, motif):
-    sequences = extract_DNA_sequences(textfile)
+    sequences = extract_dna_sequences(textfile)
 
     results = {
         "motif": motif,
@@ -135,8 +131,8 @@ def main(textfile, motif):
     longest_common_length = 0
 
     for i, sequence in enumerate(sequences):
-        gc_content = compute_GC_content(sequence)
-        motif_positions = find_DNA_motifs(sequence, motif)
+        gc_content = compute_gc_content(sequence)
+        motif_positions = find_dna_motifs(sequence, motif)
         codon_freq = compute_codon_frequency(sequence)
 
         for codon, freq in codon_freq.items():
@@ -152,7 +148,7 @@ def main(textfile, motif):
         })
 
 
-        for j in range(i+1, len(sequence)):
+        for j in range(i+1, len(sequences)):
             lcs_value = longest_common_subsequence(sequence, sequences[j])
             if len(lcs_value) > longest_common_length:
                 longest_common_val = lcs_value
@@ -166,4 +162,7 @@ def main(textfile, motif):
     results["most_common_codon"] = max(all_codons, key=all_codons.get)
 
     print(json.dumps(results, indent=4))
-    
+
+# The following lines are for testing purposes
+#if __name__ == "__main__":
+#    main("tester.txt", "GCTAGCTAGC")
